@@ -21,7 +21,7 @@ from geometry_msgs.msg import PoseStamped
 
 from televuer import TeleVuerWrapper
 from teleop.robot_control.robot_arm import G1_29_ArmController, G1_23_ArmController, H1_2_ArmController, H1_ArmController
-from teleop.robot_control.robot_arm_ik import G1_29_ArmIK, G1_23_ArmIK, H1_2_ArmIK, H1_ArmIK
+# from teleop.robot_control.robot_arm_ik import G1_29_ArmIK, G1_23_ArmIK, H1_2_ArmIK, H1_ArmIK
 from teleop.robot_control.robot_hand_unitree import Dex3_1_Controller, Dex1_1_Gripper_Controller
 from teleop.robot_control.robot_hand_inspire import Inspire_Controller
 from teleop.robot_control.robot_hand_brainco import Brainco_Controller
@@ -49,6 +49,23 @@ def matrix_to_quaternion(m):
     else:
         qw, qx, qy, qz = 1.0, 0.0, 0.0, 0.0
     return qw, qx, qy, qz
+
+
+# 将4x4位姿矩阵发布为 PoseStamped
+def publish_pose(pose_matrix, publisher):
+    msg = PoseStamped()
+    msg.header.stamp = ros_node.get_clock().now().to_msg()
+    msg.header.frame_id = 'base_link'  # 或者根据你在 OCS2 侧设定的 frame_id 设置
+    msg.pose.position.x = pose_matrix[0, 3]
+    msg.pose.position.y = pose_matrix[1, 3]
+    msg.pose.position.z = pose_matrix[2, 3]
+    qw, qx, qy, qz = matrix_to_quaternion(pose_matrix)
+    msg.pose.orientation.w = qw
+    msg.pose.orientation.x = qx
+    msg.pose.orientation.y = qy
+    msg.pose.orientation.z = qz
+    publisher.publish(msg)
+
 
 
 # state transition
@@ -157,16 +174,16 @@ if __name__ == '__main__':
 
     # arm
     if args.arm == "G1_29":
-        arm_ik = G1_29_ArmIK()
+        # arm_ik = G1_29_ArmIK()
         arm_ctrl = G1_29_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
     elif args.arm == "G1_23":
-        arm_ik = G1_23_ArmIK()
+        # arm_ik = G1_23_ArmIK()
         arm_ctrl = G1_23_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
     elif args.arm == "H1_2":
-        arm_ik = H1_2_ArmIK()
+        # arm_ik = H1_2_ArmIK()
         arm_ctrl = H1_2_ArmController(simulation_mode=args.sim)
     elif args.arm == "H1":
-        arm_ik = H1_ArmIK()
+        # arm_ik = H1_ArmIK()
         arm_ctrl = H1_ArmController(simulation_mode=args.sim)
 
     # end-effector
@@ -224,8 +241,8 @@ if __name__ == '__main__':
     # ✅ ROS2 初始化和创建发布器（替换原 arm_ctrl 控制）
     rclpy.init()
     ros_node = rclpy.create_node('xr_g1_target_node')
-    pose_pub_left = ros_node.create_publisher(PoseStamped, 'g1_left_end_effector_pose', 10)
-    pose_pub_right = ros_node.create_publisher(PoseStamped, 'g1_right_end_effector_pose', 10)
+    pose_pub_left = ros_node.create_publisher(PoseStamped, 'xr_g1_left_ee_pose', 10)
+    pose_pub_right = ros_node.create_publisher(PoseStamped, 'xr_g1_right_ee_pose', 10)
 
     try:
         logger_mp.info("Please enter the start signal (enter 'r' to start the subsequent program)")
@@ -267,6 +284,11 @@ if __name__ == '__main__':
                         publish_reset_category(1, reset_pose_publisher)
             # get input data
             tele_data = tv_wrapper.get_motion_state_data()
+
+            # ✅ 发送 XR 末端位姿给 OCS2 控制器
+            publish_pose(tele_data.left_arm_pose, pose_pub_left)
+            publish_pose(tele_data.right_arm_pose, pose_pub_right)
+
             if (args.ee == "dex3" or args.ee == "inspire1" or args.ee == "brainco") and args.xr_mode == "hand":
                 with left_hand_pos_array.get_lock():
                     left_hand_pos_array[:] = tele_data.left_hand_pos.flatten()

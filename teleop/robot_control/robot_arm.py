@@ -59,12 +59,13 @@ class DataBuffer:
             self.data = data
 
 class G1_29_ArmController:
-    def __init__(self, motion_mode = False, simulation_mode = False):
+    def __init__(self, motion_mode = False, simulation_mode = False, enable_dds_control = True):
         logger_mp.info("Initialize G1_29_ArmController...")
         self.q_target = np.zeros(14)
         self.tauff_target = np.zeros(14)
         self.motion_mode = motion_mode
         self.simulation_mode = simulation_mode
+        self.enable_dds_control = enable_dds_control
         self.kp_high = 300.0
         self.kd_high = 3.0
         self.kp_low = 80.0
@@ -82,9 +83,9 @@ class G1_29_ArmController:
 
         # initialize lowcmd publisher and lowstate subscriber
         if self.simulation_mode:
-            ChannelFactoryInitialize(1)
+            ChannelFactoryInitialize(1, 'lo')
         else:
-            ChannelFactoryInitialize(0)
+            ChannelFactoryInitialize(0, 'lo')
 
         if self.motion_mode:
             self.lowcmd_publisher = ChannelPublisher(kTopicLowCommand_Motion, hg_LowCmd)
@@ -183,8 +184,10 @@ class G1_29_ArmController:
                 self.msg.motor_cmd[id].dq = 0
                 self.msg.motor_cmd[id].tau = arm_tauff_target[idx]   
 
-            self.msg.crc = self.crc.Crc(self.msg)
-            self.lowcmd_publisher.Write(self.msg)
+            # 只有在启用 DDS 控制时才发送
+            if self.enable_dds_control:
+                self.msg.crc = self.crc.Crc(self.msg)
+                self.lowcmd_publisher.Write(self.msg)
 
             if self._speed_gradual_max is True:
                 t_elapsed = start_time - self._gradual_start_time
@@ -345,9 +348,10 @@ class G1_29_JointIndex(IntEnum):
     kNotUsedJoint5 = 34
 
 class G1_23_ArmController:
-    def __init__(self, motion_mode = False, simulation_mode = False):
+    def __init__(self, motion_mode = False, simulation_mode = False, enable_dds_control = True):
         self.simulation_mode = simulation_mode
         self.motion_mode = motion_mode
+        self.enable_dds_control = enable_dds_control
 
         logger_mp.info("Initialize G1_23_ArmController...")
         self.q_target = np.zeros(10)
@@ -625,8 +629,9 @@ class G1_23_JointIndex(IntEnum):
     kNotUsedJoint5 = 34
 
 class H1_2_ArmController:
-    def __init__(self, simulation_mode = False):
+    def __init__(self, simulation_mode = False, enable_dds_control = True):
         self.simulation_mode = simulation_mode
+        self.enable_dds_control = enable_dds_control
         
         logger_mp.info("Initialize H1_2_ArmController...")
         self.q_target = np.zeros(14)
@@ -900,8 +905,9 @@ class H1_2_JointIndex(IntEnum):
     kNotUsedJoint7 = 34
 
 class H1_ArmController:
-    def __init__(self, simulation_mode = False):
+    def __init__(self, simulation_mode = False, enable_dds_control = True):
         self.simulation_mode = simulation_mode
+        self.enable_dds_control = enable_dds_control
         
         logger_mp.info("Initialize H1_ArmController...")
         self.q_target = np.zeros(8)

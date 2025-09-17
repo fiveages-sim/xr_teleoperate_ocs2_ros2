@@ -51,21 +51,6 @@ def matrix_to_quaternion(m):
     return qw, qx, qy, qz
 
 
-# 将4x4位姿矩阵发布为 PoseStamped
-def publish_pose(pose_matrix, publisher):
-    msg = PoseStamped()
-    msg.header.stamp = ros_node.get_clock().now().to_msg()
-    msg.header.frame_id = 'base_link'  # 或者根据你在 OCS2 侧设定的 frame_id 设置
-    msg.pose.position.x = pose_matrix[0, 3]
-    msg.pose.position.y = pose_matrix[1, 3]
-    msg.pose.position.z = pose_matrix[2, 3]
-    qw, qx, qy, qz = matrix_to_quaternion(pose_matrix)
-    msg.pose.orientation.w = qw
-    msg.pose.orientation.x = qx
-    msg.pose.orientation.y = qy
-    msg.pose.orientation.z = qz
-    publisher.publish(msg)
-
 
 
 # state transition
@@ -175,16 +160,16 @@ if __name__ == '__main__':
     # arm
     if args.arm == "G1_29":
         # arm_ik = G1_29_ArmIK()
-        arm_ctrl = G1_29_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
+        arm_ctrl = G1_29_ArmController(motion_mode=args.motion, simulation_mode=args.sim, enable_dds_control=False)
     elif args.arm == "G1_23":
         # arm_ik = G1_23_ArmIK()
-        arm_ctrl = G1_23_ArmController(motion_mode=args.motion, simulation_mode=args.sim)
+        arm_ctrl = G1_23_ArmController(motion_mode=args.motion, simulation_mode=args.sim, enable_dds_control=False)
     elif args.arm == "H1_2":
         # arm_ik = H1_2_ArmIK()
-        arm_ctrl = H1_2_ArmController(simulation_mode=args.sim)
+        arm_ctrl = H1_2_ArmController(simulation_mode=args.sim, enable_dds_control=False)
     elif args.arm == "H1":
         # arm_ik = H1_ArmIK()
-        arm_ctrl = H1_ArmController(simulation_mode=args.sim)
+        arm_ctrl = H1_ArmController(simulation_mode=args.sim, enable_dds_control=False)
 
     # end-effector
     if args.ee == "dex3":
@@ -240,9 +225,24 @@ if __name__ == '__main__':
 
     # ✅ ROS2 初始化和创建发布器（替换原 arm_ctrl 控制）
     rclpy.init()
-    ros_node = rclpy.create_node('xr_g1_target_node')
-    pose_pub_left = ros_node.create_publisher(PoseStamped, 'xr_g1_left_ee_pose', 10)
-    pose_pub_right = ros_node.create_publisher(PoseStamped, 'xr_g1_right_ee_pose', 10)
+    ros_node = rclpy.create_node('xr_target_node')
+    pose_pub_left = ros_node.create_publisher(PoseStamped, 'xr_left_ee_pose', 10)
+    pose_pub_right = ros_node.create_publisher(PoseStamped, 'xr_right_ee_pose', 10)
+
+    # 将4x4位姿矩阵发布为 PoseStamped
+    def publish_pose(pose_matrix, publisher):
+        msg = PoseStamped()
+        msg.header.stamp = ros_node.get_clock().now().to_msg()
+        msg.header.frame_id = 'base_link'  # 或者根据你在 OCS2 侧设定的 frame_id 设置
+        msg.pose.position.x = pose_matrix[0, 3]
+        msg.pose.position.y = pose_matrix[1, 3]
+        msg.pose.position.z = pose_matrix[2, 3]
+        qw, qx, qy, qz = matrix_to_quaternion(pose_matrix)
+        msg.pose.orientation.w = qw
+        msg.pose.orientation.x = qx
+        msg.pose.orientation.y = qy
+        msg.pose.orientation.z = qz
+        publisher.publish(msg)
 
     try:
         logger_mp.info("Please enter the start signal (enter 'r' to start the subsequent program)")
@@ -313,9 +313,11 @@ if __name__ == '__main__':
                 if tele_data.tele_state.right_aButton:
                     stop_listening()
                     running = False
+                    print("Right aButton pressed, exiting teleoperate...")
                 # command robot to enter damping mode. soft emergency stop function
                 if tele_data.tele_state.left_thumbstick_state and tele_data.tele_state.right_thumbstick_state:
                     sport_client.Damp()
+                    print("Left thumbstick and right thumbstick pressed, entering damping mode...")
                 # control, limit velocity to within 0.3
                 sport_client.Move(-tele_data.tele_state.left_thumbstick_value[1]  * 0.3,
                                   -tele_data.tele_state.left_thumbstick_value[0]  * 0.3,

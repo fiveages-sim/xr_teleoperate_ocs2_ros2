@@ -18,6 +18,7 @@ sys.path.append(parent_dir)
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool
 
 from televuer import TeleVuerWrapper
 from teleop.robot_control.robot_arm import G1_29_ArmController, G1_23_ArmController, H1_2_ArmController, H1_ArmController
@@ -58,6 +59,8 @@ start_signal = False
 running = True
 should_toggle_recording = False
 is_recording = False
+
+
 def on_press(key):
     global running, start_signal, should_toggle_recording
     if key == 'r':
@@ -228,6 +231,7 @@ if __name__ == '__main__':
     ros_node = rclpy.create_node('xr_target_node')
     pose_pub_left = ros_node.create_publisher(PoseStamped, 'xr_left_ee_pose', 10)
     pose_pub_right = ros_node.create_publisher(PoseStamped, 'xr_right_ee_pose', 10)
+    pose_update_pub = ros_node.create_publisher(Bool, 'xr_left_thumbstick', 10)
 
     # 将4x4位姿矩阵发布为 PoseStamped
     def publish_pose(pose_matrix, publisher):
@@ -243,6 +247,18 @@ if __name__ == '__main__':
         msg.pose.orientation.y = qy
         msg.pose.orientation.z = qz
         publisher.publish(msg)
+
+    # ✅ 处理 marker 更新逻辑
+    def handle_marker_update(left_thumbstick_state):
+        # 直接根据按钮状态发送消息
+        pose_update_msg = Bool()
+        pose_update_msg.data = bool(left_thumbstick_state)  # 确保转换为标准 bool 类型
+        pose_update_pub.publish(pose_update_msg)
+
+        if left_thumbstick_state:
+            logger_mp.info("Left thumbstick pressed...")
+        else:
+            pass
 
     try:
         logger_mp.info("Please enter the start signal (enter 'r' to start the subsequent program)")
@@ -284,6 +300,10 @@ if __name__ == '__main__':
                         publish_reset_category(1, reset_pose_publisher)
             # get input data
             tele_data = tv_wrapper.get_motion_state_data()
+
+            # ✅ 处理 marker 更新逻辑
+            if args.xr_mode == "controller":
+                handle_marker_update(tele_data.tele_state.left_thumbstick_state)
 
             # ✅ 发送 XR 末端位姿给 OCS2 控制器
             publish_pose(tele_data.left_arm_pose, pose_pub_left)
@@ -334,6 +354,9 @@ if __name__ == '__main__':
             # time_ik_end = time.time()
             # logger_mp.debug(f"ik:\t{round(time_ik_end - time_ik_start, 6)}")
             # arm_ctrl.ctrl_dual_arm(sol_q, sol_tauff)
+
+            # ✅ 处理 ROS2 消息
+            rclpy.spin_once(ros_node, timeout_sec=0.001)
 
             # record data
             if args.record:

@@ -145,34 +145,36 @@ For more information, you can refer to [Official Documentation ](https://support
 
 ```bash
 # Create a conda environment
-(base) unitree@Host:~$ conda create -n tv python=3.10 pinocchio=3.1.0 numpy=1.26.4 -c conda-forge
-(base) unitree@Host:~$ conda activate tv
+(base) unitree@Host:~$ conda create -n tv_312 python=3.12 pinocchio=3.1.0 numpy=1.26.4 -c conda-forge
+(base) unitree@Host:~$ conda activate tv_312
 # Clone this repo
-(tv) unitree@Host:~$ git clone https://github.com/unitreerobotics/xr_teleoperate.git
-(tv) unitree@Host:~$ cd xr_teleoperate
+(tv_312) unitree@Host:~$ git clone https://github.com/unitreerobotics/xr_teleoperate.git
+(tv_312) unitree@Host:~$ cd xr_teleoperate
 # Shallow clone submodule
-(tv) unitree@Host:~/xr_teleoperate$ git submodule update --init --depth 1
+(tv_312) unitree@Host:~/xr_teleoperate$ git submodule update --init --depth 1
 # Install televuer submodule
-(tv) unitree@Host:~/xr_teleoperate$ cd teleop/televuer
-(tv) unitree@Host:~/xr_teleoperate/teleop/televuer$ pip install -e .
+(tv_312) unitree@Host:~/xr_teleoperate$ cd teleop/televuer
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/televuer$ pip install -e .
 # Generate the certificate files required for televuer submodule
-(tv) unitree@Host:~/xr_teleoperate/teleop/televuer$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/televuer$ openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout key.pem -out cert.pem
 # Install dex-retargeting submodule
-(tv) unitree@Host:~/xr_teleoperate/teleop/televuer$ cd ../robot_control/dex-retargeting/
-(tv) unitree@Host:~/xr_teleoperate/teleop/robot_control/dex-retargeting$ pip install -e .
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/televuer$ cd ../robot_control/dex-retargeting/
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/robot_control/dex-retargeting$ pip install -e .
 # Install additional dependencies required by this repo
-(tv) unitree@Host:~/xr_teleoperate/teleop/robot_control/dex-retargeting$ cd ../../../
-(tv) unitree@Host:~/xr_teleoperate$ pip install -r requirements.txt
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/robot_control/dex-retargeting$ cd ../../../
+(tv_312) unitree@Host:~/xr_teleoperate$ pip install -r requirements.txt
 ```
 
 ## 1.2 🕹️ unitree_sdk2_python
 
 ```bash
 # Install unitree_sdk2_python library which handles communication with the robot
-(tv) unitree@Host:~$ git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
-(tv) unitree@Host:~$ cd unitree_sdk2_python
-(tv) unitree@Host:~/unitree_sdk2_python$ pip install -e .
+(tv_312) unitree@Host:~$ git clone https://github.com/unitreerobotics/unitree_sdk2_python.git
+(tv_312) unitree@Host:~$ cd unitree_sdk2_python
+(tv_312) unitree@Host:~/unitree_sdk2_python$ pip install -e .
 ```
+
+Note: for error of "Could not locatecyclonedds. Try to set CYCLONEDDS_HOME or CMAKE_PREFIX_PATH", remember to use ABSOLUTE path to set CYCLONEDDS_HOME instead of `export ~/cyclonedds/install` (don't use `~` especially if you're using Ubuntu)
 
 > **Note 1:** For `xr_teleoperate` versions **v1.1 and above**, please ensure that the `unitree_sdk2_python` repository is checked out to a commit **equal to or newer than** [404fe44d76f705c002c97e773276f2a8fefb57e4](https://github.com/unitreerobotics/unitree_sdk2_python/commit/404fe44d76f705c002c97e773276f2a8fefb57e4).
 >
@@ -182,9 +184,9 @@ For more information, you can refer to [Official Documentation ](https://support
 >
 > In the Ubuntu system's `~/.bashrc` file, the default configuration is: `PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '`
 >
-> Taking the command `(tv) unitree@Host:~$ pip install meshcat` as an example:
+> Taking the command `(tv_312) unitree@Host:~$ pip install meshcat` as an example:
 >
-> - `(tv)` Indicates the shell is in the conda environment named `tv`.
+> - `(tv_312)` Indicates the shell is in the conda environment named `tv_312`.
 > - `unitree@Host:~` Shows the user `\u` `unitree` is logged into the device `\h` `Host`, with the current working directory `\w` as `$HOME`.
 > - `$` shows the current shell is Bash (for non-root users).
 > - `pip install meshcat` is the command `unitree` wants to execute on `Host`.
@@ -239,10 +241,10 @@ This program supports XR control of a physical robot or in simulation. Choose mo
 Assuming hand tracking with G1(29 DoF) + Dex3 in simulation with recording:
 
 ```bash
-(tv) unitree@Host:~$ cd ~/xr_teleoperate/teleop/
-(tv) unitree@Host:~/xr_teleoperate/teleop/$ python teleop_hand_and_arm.py --xr-mode=hand --arm=G1_29 --ee=dex3 --sim --record
+(tv_312) unitree@Host:~$ cd ~/xr_teleoperate/teleop/
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/$ python teleop_hand_and_arm.py --xr-mode=hand --arm=G1_29 --ee=dex3 --sim --record
 # Simplified (defaults apply):
-(tv) unitree@Host:~/xr_teleoperate/teleop/$ python teleop_hand_and_arm.py --ee=dex3 --sim --record
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/$ python teleop_hand_and_arm.py --ee=dex3 --sim --record
 ```
 
 After the program starts, the terminal shows:
@@ -313,9 +315,9 @@ Copy `image_server.py` in the `xr_teleoperate/teleop/image_server` directory to 
 # p.s. You can transfer image_server.py to PC2 via the scp command and then use ssh to remotely login to PC2 to execute it.
 # Assuming the IP address of the development computing unit PC2 is 192.168.123.164, the transmission process is as follows:
 # log in to PC2 via SSH and create the folder for the image server
-(tv) unitree@Host:~$ ssh unitree@192.168.123.164 "mkdir -p ~/image_server"
+(tv_312) unitree@Host:~$ ssh unitree@192.168.123.164 "mkdir -p ~/image_server"
 # Copy the local image_server.py to the ~/image_server directory on PC2
-(tv) unitree@Host:~$ scp ~/xr_teleoperate/teleop/image_server/image_server.py unitree@192.168.123.164:~/image_server/
+(tv_312) unitree@Host:~$ scp ~/xr_teleoperate/teleop/image_server/image_server.py unitree@192.168.123.164:~/image_server/
 ```
 
 and execute the following command **in the PC2**:
@@ -333,7 +335,7 @@ unitree@PC2:~/image_server$ python image_server.py
 After image service is started, you can use `image_client.py` **in the Host** terminal to test whether the communication is successful:
 
 ```bash
-(tv) unitree@Host:~/xr_teleoperate/teleop/image_server$ python image_client.py
+(tv_312) unitree@Host:~/xr_teleoperate/teleop/image_server$ python image_client.py
 ```
 
 ## 3.2 ✋ Inspire Hand Service (optional)

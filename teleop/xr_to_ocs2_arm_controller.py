@@ -231,7 +231,7 @@ if __name__ == '__main__':
     ros_node = rclpy.create_node('xr_target_node')
     pose_pub_left = ros_node.create_publisher(PoseStamped, 'xr_left_ee_pose', 10)
     pose_pub_right = ros_node.create_publisher(PoseStamped, 'xr_right_ee_pose', 10)
-    pose_update_pub = ros_node.create_publisher(Bool, 'xr_left_thumbstick', 10)
+    pose_update_pub = ros_node.create_publisher(Bool, 'xr_right_thumbstick', 10)
 
     # 将4x4位姿矩阵发布为 PoseStamped
     def publish_pose(pose_matrix, publisher):
@@ -249,14 +249,14 @@ if __name__ == '__main__':
         publisher.publish(msg)
 
     # ✅ 处理 marker 更新逻辑
-    def handle_marker_update(left_thumbstick_state):
+    def handle_marker_update(right_thumbstick_state):
         # 直接根据按钮状态发送消息
         pose_update_msg = Bool()
-        pose_update_msg.data = bool(left_thumbstick_state)  # 确保转换为标准 bool 类型
+        pose_update_msg.data = bool(right_thumbstick_state)  # 确保转换为标准 bool 类型
         pose_update_pub.publish(pose_update_msg)
 
-        if left_thumbstick_state:
-            logger_mp.info("Left thumbstick pressed...")
+        if right_thumbstick_state:
+            logger_mp.info("Right thumbstick pressed...")
         else:
             pass
 
@@ -303,7 +303,7 @@ if __name__ == '__main__':
 
             # ✅ 处理 marker 更新逻辑
             if args.xr_mode == "controller":
-                handle_marker_update(tele_data.tele_state.left_thumbstick_state)
+                handle_marker_update(tele_data.tele_state.right_thumbstick_state)
 
             # ✅ 发送 XR 末端位姿给 OCS2 控制器
             publish_pose(tele_data.left_arm_pose, pose_pub_left)
